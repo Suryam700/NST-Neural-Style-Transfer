@@ -11,10 +11,11 @@ def parse_arguments():
     parser.add_argument('--style_dir', type=str, default=r'C:\users\rits\Documents\NST-Neural-Style-Transfer\style_data', help='Location of style dataset')
     parser.add_argument('--vgg', type=str, default=r'C:\users\rits\Documents\NST-Neural-Style-Transfer\vgg_normalised.pth', help='Location of pre-trained VGG')
     parser.add_argument('--experiment', type=str, default='experiment1', help='Name of experiment')
-    parser.add_argument('--final_size', type=int, default=512, help='Size of final image')
-    parser.add_argument('--content_size', type=int, default=256, help='Size of content image')
-    parser.add_argument('--style_size', type=int, default=256, help='Size of style image')
+    parser.add_argument('--final_size', type=int, default=256, help='Size of final image')
+    parser.add_argument('--content_size', type=int, default=512, help='Size of content image')
+    parser.add_argument('--style_size', type=int, default=512, help='Size of style image')
     parser.add_argument('--crop', action='store_true', default=True, help='Crop Image')
+    parser.add_argument('--batch_size', type=int, default=4, help='Crop Image')
 
     return parser.parse_args()
 
@@ -39,6 +40,8 @@ def main():
 
     content_dataloader = DataLoader(content_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True)
     style_dataloader = DataLoader(style_dataset, batch_size=args.batch_size, shuffle=True, pin_memory=True, drop_last=True)
+
+    print(len(content_dataloader))
 
     
 
