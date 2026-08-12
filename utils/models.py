@@ -117,7 +117,7 @@ class Decoder(nn.Module):
         )
 
     def forward(self, input):
-        return self.net(input)
+        return self.decoder(input)
 
 
 
