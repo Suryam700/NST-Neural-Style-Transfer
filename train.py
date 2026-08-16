@@ -1,11 +1,12 @@
 import argparse
 import torch
+import torch.nn as nn
 from pathlib import Path
-from utils.utils import *
-from utils.models import *
+from utils.utils import get_transform, ImageFolderDataset, DataLoader, adaptive_instance_normalization, calc_mean_std
+from utils.models import VGGEncoder, Decoder
 import torch.optim as optim
 from tqdm import tqdm
-
+from torchvision.utils import save_image
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -24,6 +25,11 @@ def parse_arguments():
     parser.add_argument('--epochs', type=int, default=5, help='No. of epochs')
     parser.add_argument('--content_weight', type=float, default=1.0, help='Content Weight')
     parser.add_argument('--style_weight', type=float, default=10, help='Style Weight')
+    parser.add_argument('--log_interval', type=int, default=10, help='Log Interval')
+    parser.add_argument('--save_interval', type=int, default=2, help='Save Interval')
+    parser.add_argument('--resume', action='store_true', default=False, help='Resume Training')
+    parser.add_argument('--decoder_path', type=str, default=None, help='Decoder Path')
+    parser.add_argument('--optimizer_path', type=str, default=None, help='Optimizer Path')
 
     return parser.parse_args()
 
@@ -57,6 +63,10 @@ def main():
         optimizer,
         lr_lambda=lambda epoch: 1.0 / (1.0 + args.lr_decay * epoch)
     )
+
+    if args.resume:
+        decoder.load_state_dict(torch.load(args.decoder_path))
+        optimizer.load_state_dict(torch.load(args.optimizer_path))
 
     encoder.eval()
     mse_loss = nn.MSELoss()
@@ -100,10 +110,27 @@ def main():
             loss.backward()
             optimizer.step()
 
+            progress_bar.set_description(f"Loss: {running_loss:.4f}, Content Loss: {running_content_loss:.4f}, Style Loss: {running_style_loss:.4f}")
+
             running_loss += loss.item()
             running_style_loss += style_loss.item()
             running_content_loss += cont_loss.item()
 
+        scheduler.step()
+        running_loss /= len(content_dataloader)
+        running_style_loss /= len(content_dataloader)
+        running_content_loss /= len(content_dataloader)
+
+        if (epoch+1) % args.log_interval == 0:
+            tqdm.write(f"Iter {epoch+1}, Loss: {running_loss:.4f}, Content Loss: {running_content_loss:.4f}, Style Loss: {running_style_loss:.4f}")
+
+        if (epoch+1) % args.log_interval == 0:
+            torch.save(decoder.state_dict(), save_dir / f"decoder_{epoch+1}.pth")
+            torch.save(optimizer.state_dict(), save_dir / f"optimizer_{epoch+1}.pth")
+
+        with torch.no_grad():
+            output = torch.cat([content_batch, style_batch, g], dim=0)
+            save_image(output, save_dir / f"output_{epoch+1}.png", nrow=args.batch_size)
 
 if __name__ == "__main__":
     main()

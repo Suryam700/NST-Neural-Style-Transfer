@@ -84,7 +84,7 @@ class VGGEncoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self):
         super(Decoder, self).__init__()
-        self.net = nn.Sequential(
+        self.decoder = nn.Sequential(
             nn.ReflectionPad2d((1, 1, 1, 1)),
             nn.Conv2d(512, 256, (3, 3)),
             nn.ReLU(),
